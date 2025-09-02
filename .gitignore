@@ -1,0 +1,36 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# Spring Boot
+.spring-*
+
+# Logs
+logs/
+*.log
+
+# IDEs / Editors
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / Coverage / Reports
+out/
+build/
+coverage/
+surefire-reports/
+failsafe-reports/
+jacoco.exec
+
+# Node (por si usas algo front en el futuro)
+node_modules/

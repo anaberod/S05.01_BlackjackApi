@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: blackjackapi
+
+  # Configuración R2DBC (MySQL)
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/blackjackdb
+    username: root
+    password: root
+
+  # Configuración Flyway (usa JDBC)
+  flyway:
+    url: jdbc:mysql://localhost:3306/blackjackdb
+    user: root
+    password: root
+    enabled: true
+    locations: classpath:db/migration
+
+  # Configuración MongoDB Reactivo
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/blackjackdb
+
+# Logging más detallado en desarrollo
+logging:
+  level:
+    org.springframework.r2dbc: DEBUG
+    org.springframework.data.mongodb: DEBUG
+
+---
+# Perfil local
+spring:
+  config:
+    activate:
+      on-profile: local
