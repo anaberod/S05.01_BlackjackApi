@@ -1,14 +1,15 @@
+# --- DEFAULTS (aplican a todos los perfiles) ---
 spring:
   application:
     name: blackjackapi
 
-  # Configuración R2DBC (MySQL)
+  # R2DBC (MySQL) - formato recomendado con pool
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/blackjackdb
+    url: r2dbc:pool:mysql://localhost:3306/blackjackdb
     username: root
     password: root
 
-  # Configuración Flyway (usa JDBC)
+  # Flyway (JDBC) para migraciones
   flyway:
     url: jdbc:mysql://localhost:3306/blackjackdb
     user: root
@@ -16,20 +17,87 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
-  # Configuración MongoDB Reactivo
+  # MongoDB Reactivo
   data:
     mongodb:
       uri: mongodb://localhost:27017/blackjackdb
 
-# Logging más detallado en desarrollo
+# Logging útil en desarrollo
 logging:
   level:
     org.springframework.r2dbc: DEBUG
     org.springframework.data.mongodb: DEBUG
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+# ------------------------------------------------
+# Perfil LOCAL: usa servicios en localhost
+# Arranque: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# ------------------------------------------------
 ---
-# Perfil local
 spring:
   config:
     activate:
       on-profile: local
+  r2dbc:
+    url: r2dbc:pool:mysql://localhost:3306/blackjackdb
+    username: root
+    password: root
+  flyway:
+    url: jdbc:mysql://localhost:3306/blackjackdb
+    user: root
+    password: root
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/blackjackdb
+
+# ------------------------------------------------
+# Perfil DOCKER: usa hostnames de docker-compose (mysql, mongo)
+# Arranque: docker compose up -d && ./mvnw spring-boot:run -Dspring-boot.run.profiles=docker
+# ------------------------------------------------
+---
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  r2dbc:
+    url: r2dbc:pool:mysql://localhost:3306/blackjackdb
+    username: root
+    password: root
+
+  flyway:
+    url: jdbc:mysql://localhost:3306/blackjackdb
+    user: root
+    password: root
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/blackjackdb
+
+# ------------------------------------------------
+# Perfil PROD: lee credenciales de variables de entorno
+# Arranque: -Dspring.profiles.active=prod (o env SPRING_PROFILES_ACTIVE=prod)
+# ------------------------------------------------
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:pool:mysql://localhost:3306/blackjackdb}
+    username: ${R2DBC_USERNAME:root}
+    password: ${R2DBC_PASSWORD:root}
+  flyway:
+    url: ${JDBC_URL:jdbc:mysql://localhost:3306/blackjackdb}
+    user: ${JDBC_USERNAME:root}
+    password: ${JDBC_PASSWORD:root}
+    enabled: ${FLYWAY_ENABLED:true}
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/blackjackdb}
