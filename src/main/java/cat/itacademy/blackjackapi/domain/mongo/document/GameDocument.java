@@ -26,7 +26,7 @@ import java.util.UUID;
 public class GameDocument {
 
     @Id
-    private String id; // Mongo genera su propio ObjectId, pero podemos usar gameId aparte
+    private String id; // _id de Mongo (ObjectId en string)
 
     @Field("game_id")
     private UUID gameId;
@@ -36,11 +36,14 @@ public class GameDocument {
 
     private GameStatus status;
 
-    // Shoe = mazo de cartas barajado para repartir
+    /** Shoe = mazo barajado para repartir */
     private List<CardDocument> shoe;
 
     private HandDocument playerHand;
     private HandDocument dealerHand;
+
+    /** TRUE mientras la carta oculta del dealer no se ha revelado. */
+    private boolean holeHidden;
 
     private List<MoveDocument> history;
 
