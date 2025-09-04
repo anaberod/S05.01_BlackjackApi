@@ -2,7 +2,7 @@ package cat.itacademy.blackjackapi.application.service.impl;
 
 import cat.itacademy.blackjackapi.application.mapper.GameResultMapper;
 import cat.itacademy.blackjackapi.application.service.RankingService;
-import cat.itacademy.blackjackapi.web.dto.RankingItem;
+import cat.itacademy.blackjackapi.application.dto.RankingItem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;

@@ -2,51 +2,23 @@ package cat.itacademy.blackjackapi.application.service;
 
 import cat.itacademy.blackjackapi.application.mapper.GameResultMapper;
 import cat.itacademy.blackjackapi.application.service.impl.RankingServiceImpl;
-import cat.itacademy.blackjackapi.web.dto.RankingItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.test.StepVerifier;
 
-import java.math.BigDecimal;
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
+@ExtendWith(MockitoExtension.class)
 class RankingServiceImplTest {
 
-    private GameResultMapper mapper;
-    private RankingServiceImpl service;
+    // 👉 Usa los métodos default reales del mapper
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
+    GameResultMapper mapper;
 
-    @BeforeEach
-    void setup() {
-        mapper = mock(GameResultMapper.class);
-
-        // Devuelve un RankingItem válido en cada llamada a fromFields(...)
-        when(mapper.fromFields(
-                any(UUID.class),
-                anyString(),
-                anyLong(),
-                anyLong(),
-                anyLong(),
-                any(BigDecimal.class),
-                any(BigDecimal.class)
-        ))
-                // Primera llamada
-                .thenReturn(new RankingItem(
-                        UUID.randomUUID(), "Alice",
-                        10, 5, 2,
-                        new BigDecimal("150.00"), new BigDecimal("0.6667")
-                ))
-                // Segunda llamada
-                .thenReturn(new RankingItem(
-                        UUID.randomUUID(), "Bob",
-                        7, 8, 1,
-                        new BigDecimal("-20.00"), new BigDecimal("0.4667")
-                ));
-
-        service = new RankingServiceImpl(mapper);
-    }
+    @InjectMocks
+    RankingServiceImpl service;
 
     @Test
     void getRanking_returnsMockedItems() {

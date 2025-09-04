@@ -1,6 +1,6 @@
 package cat.itacademy.blackjackapi.application.service;
 
-import cat.itacademy.blackjackapi.web.dto.RankingItem;
+import cat.itacademy.blackjackapi.application.dto.RankingItem;
 import reactor.core.publisher.Flux;
 
 /**

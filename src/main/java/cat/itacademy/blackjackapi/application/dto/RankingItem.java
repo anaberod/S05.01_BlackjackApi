@@ -1,11 +1,11 @@
-package cat.itacademy.blackjackapi.web.dto;
+package cat.itacademy.blackjackapi.application.dto;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
  * Elemento del ranking de jugadores.
- * Se alimenta de la vista SQL v_ranking (MySQL).
+ * Derivado de la vista SQL (MySQL).
  */
 public record RankingItem(
         UUID playerId,

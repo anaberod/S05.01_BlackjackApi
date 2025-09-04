@@ -1,74 +1,63 @@
 package cat.itacademy.blackjackapi.application.mapper;
 
+import cat.itacademy.blackjackapi.application.dto.GameResponse;
 import cat.itacademy.blackjackapi.domain.mongo.document.CardDocument;
-import cat.itacademy.blackjackapi.domain.mongo.document.HandDocument;
 import cat.itacademy.blackjackapi.domain.mongo.document.GameDocument;
-import cat.itacademy.blackjackapi.domain.util.CardUtils;
-import cat.itacademy.blackjackapi.web.dto.CardView;
-import cat.itacademy.blackjackapi.web.dto.DealerView;
-import cat.itacademy.blackjackapi.web.dto.GameResponse;
-import cat.itacademy.blackjackapi.web.dto.HandView;
-import cat.itacademy.blackjackapi.web.dto.PlayerView;
+import cat.itacademy.blackjackapi.domain.mongo.document.HandDocument;
+import cat.itacademy.blackjackapi.domain.mongo.document.MoveDocument;
 import org.mapstruct.Mapper;
 
 import java.util.List;
 
-/**
- * Mapea documentos Mongo (GameDocument, HandDocument, CardDocument) a DTOs de respuesta.
- */
-@Mapper(componentModel = "spring")
+/** Mapea documentos Mongo -> DTOs de salida (implementación manual). */
+@Mapper(config = MapStructConfig.class)
 public interface GameDtoMapper {
 
-    /* =========================
-       CardDocument -> CardView
-       ========================= */
-    default CardView toView(CardDocument doc) {
+    /** GameDocument -> GameResponse */
+    default GameResponse toResponse(GameDocument doc) {
         if (doc == null) return null;
-
-        // Rank/Suit son enums -> convertimos a String
-        String rank = doc.getRank() == null ? null : doc.getRank().name();
-        String suit = doc.getSuit() == null ? null : doc.getSuit().name();
-
-        return new CardView(rank, suit, CardUtils.getValues(rank));
+        return new GameResponse(
+                doc.getGameId(),
+                doc.getPlayerId(),
+                doc.getStatus() == null ? null : doc.getStatus().name(),
+                toHandView(doc.getDealerHand()),
+                toHandView(doc.getPlayerHand()),   // <-- SINGULAR
+                toHistory(doc.getHistory()),
+                doc.getUpdatedAt()
+        );
     }
 
-    /* =========================
-       HandDocument -> HandView
-       ========================= */
-    default HandView toView(HandDocument doc) {
-        if (doc == null) return null;
-
-        List<CardView> cards = (doc.getCards() == null)
-                ? List.of()
-                : doc.getCards().stream().map(this::toView).toList();
-
-        return new HandView(cards, doc.getTotal(), doc.isBlackjack(), doc.isBusted());
-    }
-
-    /* =========================
-       Dealer (Hand + hole) -> DealerView
-       ========================= */
-    default DealerView toDealerView(HandDocument dealerHand, boolean holeHidden) {
-        if (dealerHand == null) {
-            return new DealerView(List.of(), 0, holeHidden);
+    /** HandDocument -> GameResponse.HandView */
+    default GameResponse.HandView toHandView(HandDocument hand) {
+        if (hand == null) {
+            return new GameResponse.HandView(List.of(), 0, false, false);
         }
-        List<CardView> cards = (dealerHand.getCards() == null)
-                ? List.of()
-                : dealerHand.getCards().stream().map(this::toView).toList();
-
-        return new DealerView(cards, dealerHand.getTotal(), holeHidden);
+        return new GameResponse.HandView(
+                toCards(hand.getCards()),
+                hand.getTotal(),
+                hand.isBlackjack(),
+                hand.isBusted()
+        );
     }
 
-    /* =========================
-       GameDocument -> GameResponse
-       ========================= */
-    default GameResponse fromDocument(GameDocument doc, PlayerView player) {
-        if (doc == null) return null;
+    /** Lista de MoveDocument -> lista de MoveView */
+    default List<GameResponse.MoveView> toHistory(List<MoveDocument> moves) {
+        return moves == null ? List.of()
+                : moves.stream()
+                .map(m -> new GameResponse.MoveView(
+                        m.getTimestamp(),
+                        m.getAction() == null ? null : m.getAction().name(),
+                        m.getDetails()))
+                .toList();
+    }
 
-        HandView playerHand = toView(doc.getPlayerHand());
-        DealerView dealer = toDealerView(doc.getDealerHand(), doc.isHoleHidden());
-        String status = (doc.getStatus() == null) ? null : doc.getStatus().toString();
-
-        return new GameResponse(doc.getGameId(), player, playerHand, dealer, status);
+    /** Lista de CardDocument -> lista de CardView (rank/suit como String) */
+    default List<GameResponse.CardView> toCards(List<CardDocument> cards) {
+        return cards == null ? List.of()
+                : cards.stream()
+                .map(c -> new GameResponse.CardView(
+                        c.getRank() == null ? null : c.getRank().name(),
+                        c.getSuit() == null ? null : c.getSuit().name()))
+                .toList();
     }
 }

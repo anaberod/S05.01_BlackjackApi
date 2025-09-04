@@ -1,57 +1,67 @@
 package cat.itacademy.blackjackapi.application.mapper;
 
-import cat.itacademy.blackjackapi.web.dto.RankingItem;
+import cat.itacademy.blackjackapi.application.dto.RankingItem;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- * Mapea resultados de partidas (vista SQL v_ranking o proyecciones) a RankingItem DTO.
- */
-@Mapper(componentModel = "spring")
+/** Mapper para ranking (vista SQL) -> DTO. Genera bean Spring y mantiene compatibilidad con fromFields(...). */
+@Mapper(config = MapStructConfig.class)
 public interface GameResultMapper {
 
-    /**
-     * Proyección genérica que puedes usar en el repositorio MySQL
-     * (Spring Data la rellenará a partir de la vista v_ranking).
-     */
+    /** Proyección devuelta por el repositorio (ajusta getters si tu vista usa otros nombres). */
     interface RankingProjection {
         UUID getPlayerId();
         String getName();
         long getWins();
         long getLosses();
         long getBlackjacks();
-        BigDecimal getEarnings();
+        BigDecimal getTotalEarnings();
         BigDecimal getWinRate();
     }
 
-    /**
-     * Convierte una proyección en DTO RankingItem.
-     */
-    default RankingItem fromProjection(RankingProjection p) {
-        if (p == null) return null;
+    /* === MapStruct “puro” (abstract) -> genera implementación y bean Spring === */
+    @Mapping(target = "playerId",   source = "playerId")
+    @Mapping(target = "name",       source = "name")
+    @Mapping(target = "wins",       source = "wins")
+    @Mapping(target = "losses",     source = "losses")
+    @Mapping(target = "blackjacks", source = "blackjacks")
+    @Mapping(target = "earnings",   source = "totalEarnings")
+    @Mapping(target = "winRate",    source = "winRate")
+    RankingItem toRankingItem(RankingProjection p); // <-- SIN 'default'
+
+    /* === Compatibilidad con tu servicio/tests actuales === */
+    default RankingItem fromFields(UUID playerId,
+                                   String name,
+                                   int wins,
+                                   int losses,
+                                   int blackjacks,
+                                   BigDecimal totalEarnings,
+                                   BigDecimal winRate) {
         return new RankingItem(
-                p.getPlayerId(),
-                p.getName(),
-                p.getWins(),
-                p.getLosses(),
-                p.getBlackjacks(),
-                p.getEarnings(),
-                p.getWinRate()
+                playerId, name,
+                (long) wins, (long) losses, (long) blackjacks,
+                safe(totalEarnings), safe(winRate)
         );
     }
 
-    /**
-     * Método alternativo para construir manualmente RankingItem (útil en tests).
-     */
     default RankingItem fromFields(UUID playerId,
                                    String name,
                                    long wins,
                                    long losses,
                                    long blackjacks,
-                                   BigDecimal earnings,
+                                   BigDecimal totalEarnings,
                                    BigDecimal winRate) {
-        return new RankingItem(playerId, name, wins, losses, blackjacks, earnings, winRate);
+        return new RankingItem(
+                playerId, name,
+                wins, losses, blackjacks,
+                safe(totalEarnings), safe(winRate)
+        );
+    }
+
+    private static BigDecimal safe(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 }

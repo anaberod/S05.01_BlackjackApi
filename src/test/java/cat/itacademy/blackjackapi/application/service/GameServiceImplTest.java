@@ -1,71 +1,99 @@
 package cat.itacademy.blackjackapi.application.service;
 
-
+import cat.itacademy.blackjackapi.application.dto.GameResponse;
 import cat.itacademy.blackjackapi.application.mapper.GameDtoMapper;
 import cat.itacademy.blackjackapi.application.service.impl.GameServiceImpl;
 import cat.itacademy.blackjackapi.domain.model.GameAction;
 import cat.itacademy.blackjackapi.domain.mongo.document.GameDocument;
 import cat.itacademy.blackjackapi.domain.mongo.repository.GameDocumentRepository;
-import cat.itacademy.blackjackapi.web.dto.GameResponse;
-import cat.itacademy.blackjackapi.web.dto.PlayerView;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class GameServiceImplTest {
 
-    private GameDocumentRepository repo;
-    private GameDtoMapper mapper;
-    private GameServiceImpl service;
+    @Mock
+    GameDocumentRepository repo;
 
-    @BeforeEach
-    void setup() {
-        repo = Mockito.mock(GameDocumentRepository.class);
-        mapper = Mockito.mock(GameDtoMapper.class);
-        service = new GameServiceImpl(repo, mapper);
-    }
+    @Mock
+    GameDtoMapper mapper;
+
+    @InjectMocks
+    GameServiceImpl service;
 
     @Test
     void createGame_returnsGameResponse() {
-        UUID playerId = UUID.randomUUID();
         UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
 
         GameDocument doc = new GameDocument();
         doc.setGameId(gameId);
         doc.setPlayerId(playerId);
 
-        PlayerView player = new PlayerView(playerId, "Alice", BigDecimal.valueOf(1000), Instant.now());
-        GameResponse response = new GameResponse(gameId, player, null, null, "IN_PROGRESS");
+        var dealer = new GameResponse.HandView(List.of(), 0, false, false);
+        var player = new GameResponse.HandView(List.of(), 0, false, false);
 
-        when(repo.save(any())).thenReturn(Mono.just(doc));
-        when(mapper.fromDocument(any(), any())).thenReturn(response);
+        var response = new GameResponse(
+                gameId,
+                playerId,
+                "IN_PROGRESS",
+                dealer,
+                player,
+                List.of(),
+                Instant.now()
+        );
+
+        when(repo.save(any(GameDocument.class))).thenReturn(Mono.just(doc));
+        when(mapper.toResponse(any(GameDocument.class))).thenReturn(response);
 
         Mono<GameResponse> result = service.createGame("Alice");
 
         StepVerifier.create(result)
-                .expectNextMatches(r -> r.gameId().equals(gameId) && r.player().name().equals("Alice"))
+                .expectNextMatches(r ->
+                        r.gameId().equals(gameId) &&
+                                r.playerId().equals(playerId) &&
+                                "IN_PROGRESS".equals(r.status()))
                 .verifyComplete();
     }
 
     @Test
     void play_deal_returnsSameGame() {
         UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+
         GameDocument doc = new GameDocument();
         doc.setGameId(gameId);
+        doc.setPlayerId(playerId);
 
-        GameResponse response = new GameResponse(gameId, null, null, null, "IN_PROGRESS");
+        var dealer = new GameResponse.HandView(List.of(), 0, false, false);
+        var player = new GameResponse.HandView(List.of(), 0, false, false);
 
-        when(repo.findByGameId(any())).thenReturn(Mono.just(doc));
-        when(mapper.fromDocument(any(), any())).thenReturn(response);
+        var response = new GameResponse(
+                gameId,
+                playerId,
+                "IN_PROGRESS",
+                dealer,
+                player,
+                List.of(),
+                Instant.now()
+        );
+
+        when(repo.findByGameId(any(UUID.class))).thenReturn(Mono.just(doc));
+        // 💡 NECESARIO porque play() hace flatMap(repo::save)
+        when(repo.save(any(GameDocument.class))).thenReturn(Mono.just(doc));
+        when(mapper.toResponse(any(GameDocument.class))).thenReturn(response);
 
         Mono<GameResponse> result = service.play(gameId, GameAction.DEAL);
 
@@ -74,4 +102,3 @@ class GameServiceImplTest {
                 .verifyComplete();
     }
 }
-

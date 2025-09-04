@@ -1,11 +1,11 @@
-package cat.itacademy.blackjackapi.web.dto;
+package cat.itacademy.blackjackapi.application.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Vista pública del jugador.
+ * Vista de un jugador para exponer en API.
  */
 public record PlayerView(
         UUID id,

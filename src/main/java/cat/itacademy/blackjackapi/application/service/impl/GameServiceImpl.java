@@ -1,31 +1,21 @@
 package cat.itacademy.blackjackapi.application.service.impl;
 
+import cat.itacademy.blackjackapi.application.dto.GameResponse;
 import cat.itacademy.blackjackapi.application.mapper.GameDtoMapper;
 import cat.itacademy.blackjackapi.application.service.GameService;
 import cat.itacademy.blackjackapi.domain.model.GameAction;
 import cat.itacademy.blackjackapi.domain.model.GameStatus;
-import cat.itacademy.blackjackapi.domain.mongo.document.CardDocument;
 import cat.itacademy.blackjackapi.domain.mongo.document.GameDocument;
 import cat.itacademy.blackjackapi.domain.mongo.document.HandDocument;
 import cat.itacademy.blackjackapi.domain.mongo.repository.GameDocumentRepository;
-import cat.itacademy.blackjackapi.web.dto.GameResponse;
-import cat.itacademy.blackjackapi.web.dto.PlayerView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Implementación mínima (stub) del servicio de juego.
- * - createGame: crea un GameDocument básico en Mongo y devuelve el estado inicial
- * - getGame: recupera y mapea a GameResponse
- * - deleteGame: elimina por gameId
- * - play: no aplica reglas todavía; solo devuelve el estado (TODO)
- */
 @Service
 @RequiredArgsConstructor
 public class GameServiceImpl implements GameService {
@@ -35,9 +25,10 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public Mono<GameResponse> createGame(String playerName) {
-        // Stub: generamos player y partida "en memoria" (sin tocar MySQL todavía)
+        // Por ahora el playerName no se usa (no hay Player en MySQL aún)
         UUID playerId = UUID.randomUUID();
-        UUID gameId = UUID.randomUUID();
+        UUID gameId   = UUID.randomUUID();
+        Instant now   = Instant.now();
 
         // Mano inicial vacía (sin lógica de reparto todavía)
         HandDocument emptyHand = HandDocument.builder()
@@ -50,53 +41,49 @@ public class GameServiceImpl implements GameService {
         GameDocument doc = GameDocument.builder()
                 .gameId(gameId)
                 .playerId(playerId)
-                .status(GameStatus.IN_PROGRESS) // o el estado que prefieras
-                .shoe(List.of())               // TODO: inicializar shoe barajado
+                .status(GameStatus.IN_PROGRESS) // o NEW si prefieres
+                .shoe(List.of())                // TODO: inicializar shoe barajado
                 .playerHand(emptyHand)
                 .dealerHand(emptyHand)
-                .holeHidden(true)              // carta del dealer oculta al inicio
-                .history(List.of())            // TODO: añadir MoveDocument en cada acción
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
+                .holeHidden(true)               // carta oculta del dealer
+                .history(List.of())             // TODO: añadir movimientos
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
 
-        // PlayerView simulado (hasta que conectes con MySQL/PlayerRepository)
-        PlayerView playerView = new PlayerView(
-                playerId,
-                playerName,
-                BigDecimal.valueOf(1000), // saldo inicial ficticio
-                Instant.now()
-        );
-
-        return gameDocumentRepository.save(doc)
-                .map(saved -> gameDtoMapper.fromDocument(saved, playerView));
+        return gameDocumentRepository
+                .save(doc)
+                .map(gameDtoMapper::toResponse);
     }
 
     @Override
     public Mono<GameResponse> getGame(UUID gameId) {
-        // Como es un stub, el PlayerView no se recupera de MySQL aún.
-        // Devolvemos un PlayerView genérico. Cuando conectes MySQL, cámbialo por una consulta real.
-        PlayerView playerView = new PlayerView(
-                null,            // se podría rellenar buscando por doc.playerId
-                "Player",        // nombre placeholder
-                BigDecimal.valueOf(1000),
-                null
-        );
-
-        return gameDocumentRepository.findByGameId(gameId)
-                .map(doc -> gameDtoMapper.fromDocument(doc, playerView));
+        return gameDocumentRepository
+                .findByGameId(gameId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Game not found: " + gameId)))
+                .map(gameDtoMapper::toResponse);
     }
 
     @Override
     public Mono<Void> deleteGame(UUID gameId) {
         return gameDocumentRepository.findByGameId(gameId)
                 .flatMap(doc -> gameDocumentRepository.deleteById(doc.getId()));
+        // Si quisieras error cuando no existe:
+        // .switchIfEmpty(Mono.error(new IllegalArgumentException("Game not found: " + gameId)))
     }
 
     @Override
     public Mono<GameResponse> play(UUID gameId, GameAction action) {
-        // TODO: implementar reglas (HIT/ STAND/ DEAL/ DOUBLE)
-        // Por ahora: no cambia nada, solo devuelve el estado actual.
-        return getGame(gameId);
+        // TODO: implementar reglas reales (HIT, STAND, DEAL, DOUBLE)
+        Instant now = Instant.now();
+
+        return gameDocumentRepository.findByGameId(gameId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Game not found: " + gameId)))
+                .flatMap(doc -> {
+                    // Actualización mínima para que quede registrado algún cambio
+                    doc.setUpdatedAt(now);
+                    return gameDocumentRepository.save(doc);
+                })
+                .map(gameDtoMapper::toResponse);
     }
 }

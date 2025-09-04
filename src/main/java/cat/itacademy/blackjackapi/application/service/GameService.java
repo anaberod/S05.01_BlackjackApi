@@ -1,7 +1,7 @@
 package cat.itacademy.blackjackapi.application.service;
 
 import cat.itacademy.blackjackapi.domain.model.GameAction;
-import cat.itacademy.blackjackapi.web.dto.GameResponse;
+import cat.itacademy.blackjackapi.application.dto.GameResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;

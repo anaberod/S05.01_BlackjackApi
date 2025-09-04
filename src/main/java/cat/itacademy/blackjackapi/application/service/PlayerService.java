@@ -1,6 +1,6 @@
 package cat.itacademy.blackjackapi.application.service;
 
-import cat.itacademy.blackjackapi.web.dto.PlayerView;
+import cat.itacademy.blackjackapi.application.dto.PlayerView;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
