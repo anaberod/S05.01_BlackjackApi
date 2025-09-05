@@ -1,9 +1,14 @@
-# --- DEFAULTS (aplican a todos los perfiles) ---
+# ===========================
+# DEFAULTS (aplican a todos)
+# ===========================
+server:
+  port: 8080
+
 spring:
   application:
     name: blackjackapi
 
-  # R2DBC (MySQL) - formato recomendado con pool
+  # R2DBC (MySQL) - pool recomendado
   r2dbc:
     url: r2dbc:pool:mysql://localhost:3306/blackjackdb
     username: root
@@ -27,15 +32,24 @@ logging:
   level:
     org.springframework.r2dbc: DEBUG
     org.springframework.data.mongodb: DEBUG
+    org.springdoc: DEBUG   # logs de springdoc para diagnosticar /v3/api-docs
 
+# springdoc (Swagger/OpenAPI)
 springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs         # JSON de OpenAPI
   swagger-ui:
-    path: /swagger-ui.html
+    enabled: true
+    path: /swagger-ui.html     # UI accesible en /swagger-ui.html
+    url: /v3/api-docs          # << fuerza a la UI a usar /v3/api-docs
+    config-url: /v3/api-docs/swagger-config
+  # (sin paths-to-match para no limitar endpoints)
 
-# ------------------------------------------------
-# Perfil LOCAL: usa servicios en localhost
-# Arranque: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
-# ------------------------------------------------
+# ===================================
+# Perfil LOCAL: servicios en localhost
+# Ejecuta: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# ===================================
 ---
 spring:
   config:
@@ -49,41 +63,37 @@ spring:
     url: jdbc:mysql://localhost:3306/blackjackdb
     user: root
     password: root
+    enabled: true
+    locations: classpath:db/migration
   data:
     mongodb:
       uri: mongodb://localhost:27017/blackjackdb
 
-# ------------------------------------------------
-# Perfil DOCKER: usa hostnames de docker-compose (mysql, mongo)
-# Arranque: docker compose up -d && ./mvnw spring-boot:run -Dspring-boot.run.profiles=docker
-# ------------------------------------------------
----
+# ===================================
+# Perfil DOCKER: hostnames de docker-compose
+# ===================================
 ---
 spring:
   config:
     activate:
       on-profile: docker
-
   r2dbc:
-    url: r2dbc:pool:mysql://localhost:3306/blackjackdb
+    url: r2dbc:pool:mysql://mysql:3306/blackjackdb
     username: root
     password: root
-
   flyway:
-    url: jdbc:mysql://localhost:3306/blackjackdb
+    url: jdbc:mysql://mysql:3306/blackjackdb
     user: root
     password: root
     enabled: true
     locations: classpath:db/migration
-
   data:
     mongodb:
-      uri: mongodb://localhost:27017/blackjackdb
+      uri: mongodb://mongo:27017/blackjackdb
 
-# ------------------------------------------------
-# Perfil PROD: lee credenciales de variables de entorno
-# Arranque: -Dspring.profiles.active=prod (o env SPRING_PROFILES_ACTIVE=prod)
-# ------------------------------------------------
+# ===================================
+# Perfil PROD: credenciales por variables de entorno
+# ===================================
 ---
 spring:
   config:
@@ -98,6 +108,7 @@ spring:
     user: ${JDBC_USERNAME:root}
     password: ${JDBC_PASSWORD:root}
     enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/blackjackdb}
